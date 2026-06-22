@@ -1,54 +1,48 @@
 import os
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text, inspect
 from dotenv import load_dotenv
-from src.extract import extreure_dades_aire
-from src.transform import transformar_dades_aire
 
-# Carreguem les variables ocultes del fitxer .env
-load_dotenv()
-
-def carregar_dades_base_dades(df: pd.DataFrame, nom_taula: str = "mesures_qualitat_aire") -> bool:
-    """
-    Connecta amb la base de dades PostgreSQL remota de Supabase i injecta 
-    el DataFrame de Pandas directament en una taula de SQL.
-    """
+def carregar_dades_db(df: pd.DataFrame):
     if df.empty:
-        print("El DataFrame està buit. Cancel·lant la fase de càrrega.")
-        return False
+        print("No hi ha dades noves per pujar a Supabase.")
+        return
 
-    # Recuperem la URI de connexió segura del fitxer .env
+    load_dotenv()
     url_connexio = os.getenv("DATABASE_URL")
+    
     if not url_connexio:
-        print("Error: La variable d'entorn DATABASE_URL no està configurada al fitxer .env")
-        return False
+        print("Error: DATABASE_URL no configurada.")
+        return
 
     try:
-        # Creem el motor de connexió de SQLAlchemy
         motor_db = create_engine(url_connexio)
         
-        print(f"Connectant al cloud de Supabase i enviant {len(df)} registres...")
+        # L'script busca la data mínima que acaba d'arribar de l'extracció
+        data_tall_dinamica = df['data'].min()
+        data_tall_str = data_tall_dinamica.strftime('%Y-%m-%d') if hasattr(data_tall_dinamica, 'strftime') else str(data_tall_dinamica)[:10]
+
+        # INSTANCIEM L'INSPECTOR per comprovar si la taula ja existeix
+        inspector = inspect(motor_db)
         
-        # Injectem les dades. 
-        # Si la taula no existeix, Pandas la crearà de zero automàticament.
-        # Si ja existeix, hi afegirà les noves files (append).
-        df.to_sql(nom_taula, con=motor_db, if_exists='append', index=False)
-        
-        print(f"¡Èxit! Dades carregades correctament a la taula '{nom_taula}'.")
-        return True
+        if 'mesures_qualitat_aire' in inspector.get_table_names():
+            # Si existeix, fem la neteja anti-duplicats
+            with motor_db.connect() as connexio:
+                print(f"Netejant la base de dades a partir del {data_tall_str} per integrar els nous registres...")
+                consulta_esborrat = text(f"DELETE FROM mesures_qualitat_aire WHERE data >= '{data_tall_str}'")
+                connexio.execute(consulta_esborrat)
+                connexio.commit()
+        else:
+            # Si no existeix, ens saltem el DELETE
+            print("La taula no existeix a Supabase. Es crearà automàticament de zero ara.")
+            
+        # Inserim les dades
+        print("Inserint les dades...")
+        df.to_sql('mesures_qualitat_aire', con=motor_db, if_exists='append', index=False)
+        print(f"Càrrega completada! S'han sincronitzat {len(df)} files a Supabase.")
         
     except Exception as error:
-        print(f"Error crític durant la càrrega a la base de dades: {error}")
-        return False
+        print(f"Error crític durant la càrrega: {error}")
 
 if __name__ == "__main__":
-    print("Executant l'ETL completa en mode de prova...")
-    
-    # 1. Extracció (Demanem 20 registres de mostra per provar)
-    dades_en_brut = extreure_dades_aire(limit=20)
-    
-    # 2. Transformació (Passem a format vertical amb Pandas)
-    df_net = transformar_dades_aire(dades_en_brut)
-    
-    # 3. Càrrega (Enviem el resultat final a PostgreSQL)
-    carregar_dades_base_dades(df_net)
+    pass

@@ -33,4 +33,4 @@ jobs:
       env:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
       run: |
-        python -m src.load
+        python -m src.main
