@@ -8,4 +8,4 @@ venv/
 # Brossa del sistema i de Python
 __pycache__/
 *.pyc
-.DS_Store
+.DS_Stores
