@@ -1,6 +1,6 @@
 import requests
 
-def extreure_dades_aire(municipi: str = "Barcelona") -> list:
+def extreure_dades_aire() -> list:
     """
     Fa una crida a l'API de Socrata de la Generalitat de Catalunya
     per obtenir les dades de qualitat de l'aire (XVPCA).
@@ -9,13 +9,13 @@ def extreure_dades_aire(municipi: str = "Barcelona") -> list:
     
     # Configurem els paràmetres de l'API de Socrata (SODA)
     parametres = {
-        "municipi": municipi,
+        "municipi": municipi, # type: ignore
         "$limit": limit
     }
     
     try:
         # Fem la petició HTTP GET
-        resposta = requests.get(url_endpoint, params=parametres)
+        resposta = requests.get(url_endpoint)
         
         # Això llançarà una excepció si el codi de resposta és un error (4xx o 5xx)
         resposta.raise_for_status()
