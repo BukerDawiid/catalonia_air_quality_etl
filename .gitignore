@@ -1,0 +1,11 @@
+# Entorn virtual local
+venv/
+.venv/
+
+# Fitxer de configuració secreta (Contrasenya de Supabase)
+.env
+
+# Brossa del sistema i de Python
+__pycache__/
+*.pyc
+.DS_Store

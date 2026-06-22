@@ -1,0 +1,36 @@
+name: Catalonia Air Quality ETL Execution
+
+# Definim quan s'ha d'executar
+on:
+  schedule:
+    # S'executarà cada dia a les 02:00 UTC (04:00 AM hora de Catalunya a l'estiu)
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Això ens permetrà prémer un botó a GitHub per provar-ho manualment quan vulguem
+
+jobs:
+  run-etl-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Descarrega el codi del teu repositori de GitHub a la màquina virtual
+    - name: Checkout repository code
+      uses: actions/checkout@v4
+
+    # 2. Configura l'entorn de Python a la màquina virtual
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+
+    # 3. Instal·la les llibreries utilitzant el fitxer d'inventari que hem creat a la Fase 1
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    # 4. Executa la pipeline ETL passant-li de manera segura la credencial de Supabase
+    - name: Run ETL Script
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      run: |
+        python -m src.load
