@@ -1,6 +1,6 @@
 import requests
 
-def extreure_dades_aire(municipi: str = "Barcelona", limit: int = 50) -> list:
+def extreure_dades_aire(municipi: str = "Barcelona") -> list:
     """
     Fa una crida a l'API de Socrata de la Generalitat de Catalunya
     per obtenir les dades de qualitat de l'aire (XVPCA).
