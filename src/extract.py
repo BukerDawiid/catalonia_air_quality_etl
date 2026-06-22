@@ -10,7 +10,7 @@ def extreure_dades_aire() -> list:
     # Configurem els paràmetres de l'API de Socrata (SODA)
     parametres = {
         "municipi": municipi, # type: ignore
-        "$limit": limit
+        "$limit": limit # type: ignore
     }
     
     try:
