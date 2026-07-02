@@ -15,7 +15,7 @@ def transformar_dades_aire(dades_en_brut: list) -> pd.DataFrame:
     columnes_identificadores = [
         'codi_provincia', 'provincia', 'codi_municipi', 'municipi', 
         'nom_estacio', 'codi_eoi', 'data', 'magnitud', 'contaminant', 'unitats',
-        'punt_mostreig'
+        'punt_mostreig', 'latitud', 'longitud' # <-- Afegit aquí
     ]
     
     columnes_hores = [f'h{i:02d}' for i in range(1, 25)]

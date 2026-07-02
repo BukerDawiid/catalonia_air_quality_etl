@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
+import plotly.express as px
 
 # Carreguem les variables d'entorn en local
 load_dotenv()
@@ -96,3 +97,41 @@ else:
         st.dataframe(df_filtrat, use_container_width=True)
     else:
         st.info("No s'han trobat registres que coincideixin amb els filtres seleccionats.")
+
+# --- MAPA INTERACTIU ---
+    st.subheader(f"🗺️ Mapa en temps real: {contaminant_seleccionat}")
+    
+    # Filtrem totes les dades per quedar-nos només amb el contaminant que estem mirant
+    df_mapa = df_mesures[df_mesures['contaminant'] == contaminant_seleccionat].copy()
+    
+    if not df_mapa.empty and 'latitud' in df_mapa.columns:
+        # Ens quedem només amb l'última mesura disponible de cada estació
+        df_mapa = df_mapa.sort_values('hora').drop_duplicates('nom_estacio', keep='last')
+        
+        # Assegurem que les coordenades són números (a vegades l'API les envia com a text)
+        df_mapa['latitud'] = pd.to_numeric(df_mapa['latitud'], errors='coerce')
+        df_mapa['longitud'] = pd.to_numeric(df_mapa['longitud'], errors='coerce')
+        df_mapa = df_mapa.dropna(subset=['latitud', 'longitud', 'valor_mesura'])
+        
+        # Creem el mapa amb Plotly
+        figura_mapa = px.scatter_mapbox(
+            df_mapa,
+            lat="latitud",
+            lon="longitud",
+            color="valor_mesura",  # El color dependrà del nivell de contaminació
+            size="valor_mesura",   # La mida de la bombolla també
+            hover_name="nom_estacio", # Text que surt al posar el ratolí
+            hover_data={"valor_mesura": True, "latitud": False, "longitud": False},
+            color_continuous_scale=px.colors.sequential.YlOrRd, # Escala de Groc a Vermell
+            zoom=6.5,
+            center={"lat": 41.8, "lon": 1.5}, # Centrat aproximadament a Catalunya
+            mapbox_style="carto-positron",    # Estil de mapa clar per destacar els colors
+        )
+        
+        # Ajustem els marges perquè ocupi bé l'espai
+        figura_mapa.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+        
+        # Ho enviem a la pantalla de Streamlit
+        st.plotly_chart(figura_mapa, use_container_width=True)
+    else:
+        st.info("No hi ha dades geogràfiques disponibles per a aquest contaminant.")
